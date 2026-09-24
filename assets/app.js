@@ -123,13 +123,22 @@
     if (!all.length) { el.appendChild(h("p", { cls: "empty", text: "ไม่มีข้อมูลในกลุ่มที่เลือก" })); return; }
     var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
     if (o.yZero || lo <= hi * 0.35 || lo <= 0) lo = Math.min(0, lo); else lo = lo - (hi - lo) * 0.2;
+    if (o.includeZero) hi = Math.max(0, hi);
     var dom = niceDomain(lo, hi, compact ? 4 : 5);
     var fmtT = o.tickFmt || tickFmt(dom.step);
+    if (o.tickSigned) fmtT = sgn(fmtT);
     var pad = Math.min(24, iw / (n * 2));
     var X = function (i) { return m.l + pad + (n === 1 ? (iw - 2 * pad) / 2 : i * (iw - 2 * pad) / (n - 1)); };
     var Y = function (v) { return m.t + ih - (v - dom.lo) / (dom.hi - dom.lo) * ih; };
     var svg = s("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H, role: "img", "aria-label": o.label || "" }, el);
 
+    if (o.band && o.band.from > 0 && o.band.from < n) {
+      var stepB = (iw - 2 * pad) / (n - 1), bx = X(o.band.from) - stepB / 2;
+      s("rect", { x: bx, y: m.t, width: m.l + iw - bx, height: ih, fill: "var(--band)" }, svg);
+      s("line", { x1: bx, x2: bx, y1: m.t, y2: m.t + ih, stroke: "var(--base)", "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+      var roomy = (m.l + iw - bx) > 72;
+      s("text", roomy ? { x: bx + 6, y: m.t + 12, text: o.band.label, style: "font-size:10.5px" } : { x: m.l + iw, y: m.t - 5, "text-anchor": "end", text: o.band.label, style: "font-size:10.5px" }, svg);
+    }
     if (o.partial != null && o.partial >= 0) {
       var stepX = n > 1 ? (iw - 2 * pad) / (n - 1) : iw;
       var px = X(o.partial);
@@ -142,7 +151,7 @@
       s("text", { x: m.l - 8, y: y + 4, "text-anchor": "end", text: fmtT(t) }, svg);
     });
     o.x.forEach(function (lab, i) {
-      if (compact && n > 5 && i % 2 === 1 && i !== n - 1) return;
+      if ((iw / n) < 44 && i % 2 === 1 && i !== n - 1) return;
       s("text", { x: X(i), y: H - 8, "text-anchor": "middle", text: lab }, svg);
     });
 
@@ -204,7 +213,7 @@
         rows.push({ color: sr.color, v: (o.fmt || f2)(v), l: sr.name, raw: v });
       });
       rows.sort(function (a, b) { return b.raw - a.raw; });
-      var head = (o.xTitle || "ปีงบ ") + o.x[i] + (i === o.partial ? " · ข้อมูลไม่ครบปี" : "");
+      var head = (o.xHead ? o.xHead(i) : (o.xTitle || "ปีงบ ") + o.x[i]) + (i === o.partial ? " · ข้อมูลไม่ครบปี" : "");
       if (cx == null) { var r = svg.getBoundingClientRect(); cx = r.left + x * (r.width / W); cy = r.top + m.t; }
       tipShow(head, rows, cx, cy);
     }
@@ -298,13 +307,27 @@
   var state = {
     region: -1, nhso: -1, prov: -1, amp: -1, coh: "all", aff: "all", size: -1,
     tab: "overview",
+    ba: { K: 2, comp: "never", bal: true, inc69: false },
     vis: [false, true, true, true, false, true, true],
     ov: { by: "prov", sort: "pct", dir: -1, all: false },
     sv: { kind: "OP", ver: "Adj", meas: "pc" },
     bg: { fund: "uc", meas: "pc", year: 2 },
     u: { q: "", sort: "code", dir: 1, page: 0, sel: -1 }
   };
-  var filtered = [];
+  var filtered = [], filteredGeo = [];
+  function passGeo(i) {
+    if (state.region >= 0 && regOf[i] !== state.region) return false;
+    if (state.nhso >= 0 && nhOf[i] !== state.nhso) return false;
+    if (state.prov >= 0 && provOf[i] !== state.prov) return false;
+    if (state.amp >= 0 && P.amp[i] !== state.amp) return false;
+    if (state.size >= 0 && P.size[i] !== state.size) return false;
+    return true;
+  }
+  function updateScope() {
+    var geo = state.tab === "ba";
+    $("scope").textContent = "แสดง " + f0(geo ? filteredGeo.length : filtered.length) + " จาก " + f0(N) + " หน่วย" + (geo ? " (ตามพื้นที่และขนาด)" : "");
+    $("f-coh").disabled = geo; $("f-aff").disabled = geo;
+  }
 
   function affGroup(a) { return a === 0 ? "pao" : (a >= 1 && a <= 4) ? "local" : a === 6 ? "moph" : "other"; }
   function pass(i) {
@@ -320,9 +343,9 @@
     return true;
   }
   function refilter() {
-    filtered = [];
-    for (var i = 0; i < N; i++) if (pass(i)) filtered.push(i);
-    $("scope").textContent = "แสดง " + f0(filtered.length) + " จาก " + f0(N) + " หน่วย";
+    filtered = []; filteredGeo = [];
+    for (var i = 0; i < N; i++) { if (pass(i)) filtered.push(i); if (passGeo(i)) filteredGeo.push(i); }
+    updateScope();
     var any = state.region >= 0 || state.nhso >= 0 || state.prov >= 0 || state.amp >= 0 || state.coh !== "all" || state.aff !== "all" || state.size >= 0;
     $("f-reset").disabled = !any;
   }
@@ -365,7 +388,7 @@
   });
 
   // ---------- tabs ----------
-  var TABS = ["overview", "service", "budget", "units"];
+  var TABS = ["overview", "ba", "service", "budget", "units"];
   function setTab(t, push) {
     if (TABS.indexOf(t) < 0) t = "overview";
     state.tab = t;
@@ -375,19 +398,21 @@
       $("p-" + x).hidden = x !== t;
     });
     if (push) { try { history.replaceState(null, "", "#" + t); } catch (e) {} }
+    updateScope();
     renderActive();
   }
   document.querySelectorAll(".tab").forEach(function (b) {
     b.addEventListener("click", function () { setTab(b.dataset.tab, true); });
     b.addEventListener("keydown", function (e) {
       var i = TABS.indexOf(state.tab);
-      if (e.key === "ArrowRight") { setTab(TABS[(i + 1) % 4], true); $("t-" + state.tab).focus(); }
-      if (e.key === "ArrowLeft") { setTab(TABS[(i + 3) % 4], true); $("t-" + state.tab).focus(); }
+      if (e.key === "ArrowRight") { setTab(TABS[(i + 1) % TABS.length], true); $("t-" + state.tab).focus(); }
+      if (e.key === "ArrowLeft") { setTab(TABS[(i + TABS.length - 1) % TABS.length], true); $("t-" + state.tab).focus(); }
     });
   });
   function renderActive() {
     tipHide();
     if (state.tab === "overview") renderOverview();
+    else if (state.tab === "ba") renderBA();
     else if (state.tab === "service") renderService();
     else if (state.tab === "budget") renderBudget();
     else renderUnits();
@@ -759,6 +784,173 @@
       bs.appendChild(h("div", { cls: "tbl-wrap" }, [bt]));
     }
     el.appendChild(bs);
+  }
+
+  // =========================================================
+  // BEFORE / AFTER TRANSFER
+  // =========================================================
+  var BA_K = [[2, "OP Adj"], [1, "OP Send"], [4, "PP Adj"], [3, "PP Send"]];
+  var BA_COMP = {
+    never: { set: [6], name: "ไม่ถ่ายโอน", color: cv(6) },
+    notyet: { set: [5], name: "กำหนดถ่ายโอน 2570", color: cv(5) },
+    both: { set: [5, 6], name: "ไม่ถ่ายโอน + กำหนด 2570", color: cv(6) }
+  };
+  var BA_COH = [1, 2, 3];
+  var sgn = function (f) { return function (v) { return v == null || isNaN(v) ? "–" : (v > 0.0005 ? "+" : v < -0.0005 ? "−" : "") + f(Math.abs(v)); }; };
+  var sf2 = sgn(f2), sf1 = sgn(f1);
+
+  function baCompute() {
+    var S = state.ba, K = S.K, ny = S.inc69 ? 7 : 6, cmp = BA_COMP[S.comp].set;
+    var grp = { 1: [], 2: [], 3: [], C: [] }, n = { 1: 0, 2: 0, 3: 0, C: 0 };
+    ["1", "2", "3", "C"].forEach(function (g) { for (var y = 0; y < ny; y++) grp[g].push({ v: 0, p: 0 }); });
+    filteredGeo.forEach(function (i) {
+      var c = P.coh[i], g = BA_COH.indexOf(c) >= 0 ? String(c) : cmp.indexOf(c) >= 0 ? "C" : null;
+      if (!g) return;
+      var okAll = true, ok = [];
+      for (var y = 0; y < ny; y++) { var p = uc(i, y, 0), v = uc(i, y, K); ok.push(p != null && p > 0 && v != null); if (!ok[y]) okAll = false; }
+      if (S.bal && !okAll) return;
+      n[g]++;
+      for (y = 0; y < ny; y++) if (ok[y]) { grp[g][y].v += uc(i, y, K); grp[g][y].p += uc(i, y, 0); }
+    });
+    var ser = {};
+    Object.keys(grp).forEach(function (g) { ser[g] = grp[g].map(function (a) { return a.p ? a.v / a.p : null; }); });
+    var mean = function (arr) { var s = 0, k = 0; arr.forEach(function (v) { if (v != null) { s += v; k++; } }); return k ? s / k : null; };
+    var res = BA_COH.map(function (c) {
+      var T = D.yearsUC.indexOf(COH[c].yr), Sg = ser[String(c)], C = ser.C;
+      var pre = mean(Sg.slice(0, T)), post = mean(Sg.slice(T, ny)), cpre = mean(C.slice(0, T)), cpost = mean(C.slice(T, ny));
+      var ok = pre != null && post != null && cpre != null && cpost != null;
+      var did = ok ? (post - pre) - (cpost - cpre) : null;
+      var base = (Sg[T - 1] != null && C[T - 1] != null) ? Sg[T - 1] - C[T - 1] : null;
+      var ev = {};
+      for (var y = 0; y < ny; y++) ev[y - T] = (base != null && Sg[y] != null && C[y] != null) ? (Sg[y] - C[y]) - base : null;
+      return { c: c, T: T, n: n[String(c)], s: Sg, pre: pre, post: post, cpre: cpre, cpost: cpost, did: did, pct: ok && pre ? did / pre : null, ev: ev,
+        preY: D.yearsUC[0] + "–" + D.yearsUC[T - 1], postY: D.yearsUC[T] + (ny - 1 > T ? "–" + D.yearsUC[ny - 1] : "") };
+    });
+    return { ny: ny, comp: ser.C, nC: n.C, res: res };
+  }
+
+  function dumbbell(el, rows, o) {
+    clear(el);
+    var W = Math.max(280, el.clientWidth || 600), narrow = W < 620;
+    var lw = narrow ? 0 : 200, vw = narrow ? 0 : 150, rh = narrow ? 52 : 34, gapG = 14;
+    var m = { t: 8, b: 30, l: 16 + lw, r: 16 + vw };
+    var groups = 0, last = null; rows.forEach(function (r) { if (r.g !== last) { groups++; last = r.g; } });
+    var H = m.t + m.b + rows.length * rh + (groups - 1) * gapG;
+    var vals = []; rows.forEach(function (r) { if (r.pre != null) vals.push(r.pre); if (r.post != null) vals.push(r.post); });
+    if (!vals.length) { el.appendChild(h("p", { cls: "empty", text: "ไม่มีข้อมูลในกลุ่มที่เลือก" })); return; }
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), dom = niceDomain(lo - (hi - lo) * 0.08, hi + (hi - lo) * 0.08, 5);
+    var iw = W - m.l - m.r, X = function (v) { return m.l + (v - dom.lo) / (dom.hi - dom.lo) * iw; };
+    var svg = s("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H, role: "img", "aria-label": o.label || "" }, el);
+    var tf = tickFmt(dom.step);
+    dom.ticks.forEach(function (t) {
+      var x = X(t);
+      s("line", { x1: x, x2: x, y1: m.t, y2: H - m.b + 4, stroke: "var(--line)", "stroke-width": 1, "shape-rendering": "crispEdges" }, svg);
+      s("text", { x: x, y: H - 10, "text-anchor": "middle", text: tf(t) }, svg);
+    });
+    var y = m.t; last = null;
+    rows.forEach(function (r) {
+      if (last !== null && r.g !== last) y += gapG;
+      last = r.g;
+      var cy = y + (narrow ? rh - 14 : rh / 2);
+      if (narrow) {
+        var tl = s("text", { x: m.l, y: y + 14, class: "tl" }, svg);
+        s("tspan", { text: r.label + "  " }, tl);
+        s("tspan", { text: f2(r.pre) + " → " + f2(r.post), class: "vl" }, tl);
+      } else {
+        s("text", { x: 16, y: cy + 4, class: "tl", text: r.label }, svg);
+        var tv = s("text", { x: W - 16, y: cy + 4, "text-anchor": "end", class: "tl" }, svg);
+        s("tspan", { text: f2(r.pre) + " → " + f2(r.post) + "  ", class: "vl" }, tv);
+        s("tspan", { text: "(" + sf2(r.post - r.pre) + ")" }, tv);
+      }
+      if (r.pre != null && r.post != null) {
+        s("line", { x1: X(r.pre), x2: X(r.post), y1: cy, y2: cy, stroke: r.color, "stroke-width": 2, "stroke-linecap": "round" }, svg);
+        s("circle", { cx: X(r.pre), cy: cy, r: 5, fill: "var(--surface)", stroke: r.color, "stroke-width": 2 }, svg);
+        s("circle", { cx: X(r.post), cy: cy, r: 5, fill: r.color, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+      }
+      var hit = s("rect", { x: 0, y: y, width: W, height: rh, class: "bar-hit", tabindex: 0, "aria-label": r.label + " ก่อน " + f2(r.pre) + " หลัง " + f2(r.post) }, svg);
+      var on = function (ev) {
+        var rr = [{ color: r.color, v: f2(r.pre), l: "ก่อนถ่ายโอน (ปีงบ " + r.preY + ")" }, { color: r.color, v: f2(r.post), l: "หลังถ่ายโอน (ปีงบ " + r.postY + ")" }, { v: sf2(r.post - r.pre), l: "เปลี่ยนแปลง" + (r.pre ? " (" + sf1((r.post - r.pre) / r.pre * 100) + "%)" : "") }];
+        if (ev && ev.clientX != null) tipShow(r.label, rr, ev.clientX, ev.clientY); else tipAtEl(hit, r.label, rr);
+      };
+      hit.addEventListener("pointermove", on); hit.addEventListener("pointerleave", tipHide);
+      hit.addEventListener("focus", function () { on(null); }); hit.addEventListener("blur", tipHide);
+      y += rh;
+    });
+  }
+
+  function renderBA() {
+    var S = state.ba;
+    seg($("ba-k"), BA_K, S.K, function (v) { S.K = v; renderBA(); });
+    seg($("ba-comp"), [["never", "ไม่ถ่ายโอน"], ["notyet", "กำหนด 2570"], ["both", "รวมสองกลุ่ม"]], S.comp, function (v) { S.comp = v; renderBA(); });
+    seg($("ba-bal"), [[true, "ข้อมูลครบทุกปี"], [false, "ทุกหน่วย"]], S.bal, function (v) { S.bal = v; renderBA(); });
+    seg($("ba-69"), [[false, "ถึง 2568"], [true, "รวม 2569*"]], S.inc69, function (v) { S.inc69 = v; renderBA(); });
+    var R = baCompute(), cp = BA_COMP[S.comp], kl = BA_K.filter(function (k) { return k[0] === S.K; })[0][1];
+    $("ba-scope").textContent = "กลุ่มเปรียบเทียบ " + cp.name + " " + f0(R.nC) + " หน่วย · " + (S.bal ? "เฉพาะหน่วยที่มีข้อมูลครบทุกปี" : "ทุกหน่วยที่มีข้อมูลในแต่ละปี") + " · ปีงบ 2563–" + D.yearsUC[R.ny - 1];
+
+    // KPI: DiD per cohort
+    var tiles = R.res.map(function (r) {
+      return { l: "รุ่น " + COH[r.c].s + " · ผลต่างเทียบกลุ่มเปรียบเทียบ", v: sf2(r.did), u: r.pct != null ? sf1(r.pct * 100) + "%" : "",
+        s: "ถ่ายโอน " + sf2(r.post - r.pre) + " · เปรียบเทียบ " + sf2(r.cpost - r.cpre) + " · n " + f0(r.n) };
+    });
+    tiles.push({ l: "กลุ่มเปรียบเทียบ", v: f0(R.nC), u: "หน่วย", s: cp.name });
+    kpis($("ba-kpis"), tiles);
+    $("ba-kpi-note").textContent = kl + " ต่อหัวประชากร UC · ผลต่าง = (หลัง − ก่อน ของรุ่นที่ถ่ายโอน) − (หลัง − ก่อน ของกลุ่มเปรียบเทียบ) · ร้อยละคิดจากค่าก่อนถ่ายโอนของรุ่นนั้น";
+
+    // small multiples
+    var sm = clear($("ba-sm"));
+    var lg = clear($("ba-sm-legend"));
+    R.res.forEach(function (r) { lg.appendChild(h("span", { cls: "lg lg-static" }, [key(cv(r.c)), COH[r.c].l])); });
+    lg.appendChild(h("span", { cls: "lg lg-static" }, [key(cp.color), "กลุ่มเปรียบเทียบ: " + cp.name]));
+    var x = D.yearsUC.slice(0, R.ny);
+    R.res.forEach(function (r) {
+      var box = h("div", { cls: "sm" }), ch = h("div", { cls: "chart" });
+      box.appendChild(h("div", { cls: "sm-h" }, [h("span", { cls: "chip" }, [key(cv(r.c), true), COH[r.c].l]), h("span", { cls: "muted", text: "n " + f0(r.n) })]));
+      box.appendChild(ch); sm.appendChild(box);
+      lineChart(ch, { x: x, compact: true, height: 230, fmt: f2, lpad: 42, partial: S.inc69 ? 6 : -1, band: { from: r.T, label: "หลังถ่ายโอน" },
+        series: [{ name: COH[r.c].l, color: cv(r.c), vals: r.s.slice(0, R.ny) }, { name: cp.name, color: cp.color, vals: R.comp.slice(0, R.ny) }],
+        label: kl + " ต่อหัว รุ่น " + COH[r.c].s + " เทียบ " + cp.name });
+    });
+
+    // event study
+    var tMin = 0, tMax = 0;
+    R.res.forEach(function (r) { Object.keys(r.ev).forEach(function (t) { t = +t; if (t < tMin) tMin = t; if (t > tMax) tMax = t; }); });
+    var ex = [], idx0 = -1;
+    for (var t = tMin; t <= tMax; t++) { ex.push(t === 0 ? "0" : (t > 0 ? "+" + t : "−" + Math.abs(t))); if (t === 0) idx0 = ex.length - 1; }
+    lineChart($("ba-ev"), {
+      x: ex, fmt: sf2, tickSigned: true, includeZero: true, band: { from: idx0, label: "หลังถ่ายโอน" },
+      xHead: function (i) { var tt = tMin + i; return tt === -1 ? "ปีก่อนถ่ายโอน 1 ปี (จุดอ้างอิง = 0)" : tt < 0 ? "ก่อนถ่ายโอน " + Math.abs(tt) + " ปี" : tt === 0 ? "ปีงบแรกที่ถ่ายโอน" : "หลังถ่ายโอน " + tt + " ปี"; },
+      series: R.res.map(function (r) {
+        return { name: COH[r.c].l, short: COH[r.c].s, color: cv(r.c), vals: ex.map(function (_, i) { var v = r.ev[tMin + i]; return v == null ? null : v; }), mark: ex.indexOf("−1") };
+      }),
+      label: "ผลต่างจากกลุ่มเปรียบเทียบตามปีเทียบกับปีถ่ายโอน"
+    });
+
+    // dumbbell
+    var rows = [];
+    R.res.forEach(function (r) {
+      rows.push({ g: r.c, label: "รุ่น " + COH[r.c].s + " · ถ่ายโอน", color: cv(r.c), pre: r.pre, post: r.post, preY: r.preY, postY: r.postY });
+      rows.push({ g: r.c, label: "รุ่น " + COH[r.c].s + " · เปรียบเทียบ", color: cp.color, pre: r.cpre, post: r.cpost, preY: r.preY, postY: r.postY });
+    });
+    dumbbell($("ba-db"), rows, { label: "ค่าเฉลี่ยก่อนและหลังถ่ายโอน" });
+
+    // table
+    var tb0 = clear($("ba-table"));
+    var hr1 = h("tr", null, [h("th", { text: "รุ่นถ่ายโอน", rowspan: 2 }), h("th", { text: "ช่วงก่อน / หลัง", rowspan: 2 }), h("th", { cls: "r grp", text: "รุ่นที่ถ่ายโอน", colspan: 4 }), h("th", { cls: "r grp", text: "กลุ่มเปรียบเทียบ", colspan: 3 }), h("th", { cls: "r grp", text: "ผลต่าง", colspan: 2 })]);
+    var hr2 = h("tr");
+    ["หน่วย", "ก่อน", "หลัง", "เปลี่ยน", "ก่อน", "หลัง", "เปลี่ยน", "ค่า", "%"].forEach(function (t) { hr2.appendChild(h("th", { cls: "r", text: t })); });
+    tb0.appendChild(h("thead", null, [hr1, hr2]));
+    var tbody = h("tbody");
+    R.res.forEach(function (r) {
+      tbody.appendChild(h("tr", null, [
+        h("td", null, [h("span", { cls: "chip" }, [key(cv(r.c), true), COH[r.c].l])]),
+        h("td", { cls: "muted", text: r.preY + " / " + r.postY }),
+        h("td", { cls: "r", text: f0(r.n) }), h("td", { cls: "r", text: f2(r.pre) }), h("td", { cls: "r", text: f2(r.post) }), h("td", { cls: "r", text: sf2(r.post - r.pre) }),
+        h("td", { cls: "r", text: f2(r.cpre) }), h("td", { cls: "r", text: f2(r.cpost) }), h("td", { cls: "r", text: sf2(r.cpost - r.cpre) }),
+        h("td", { cls: "r" }, [h("b", { text: sf2(r.did) })]), h("td", { cls: "r", text: r.pct != null ? sf1(r.pct * 100) + "%" : "–" })
+      ]));
+    });
+    tb0.appendChild(tbody);
+    $("ba-tsub").textContent = kl + " ต่อหัวประชากร UC · ค่าเฉลี่ยของแต่ละปีในช่วง · กลุ่มเปรียบเทียบ " + cp.name + " (" + f0(R.nC) + " หน่วย)";
   }
 
   // ---------- init ----------
