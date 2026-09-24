@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ถ่ายโอน รพ.สต. สู่ท้องถิ่น</title>
+<meta name="description" content="แดชบอร์ดติดตามการถ่ายโอน รพ.สต. สอน. และ สสช. ไปยังองค์กรปกครองส่วนท้องถิ่น พร้อมการใช้บริการ OP/PP สิทธิ UC และเงินโอน สปสช. รายหน่วย ข้อมูลจากสถาบันวิจัยระบบสาธารณสุข (สวรส.)">
+<meta name="author" content="พลเทพ วิจิตรคุณากร คณะแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">การกระจายอำนาจด้านสุขภาพปฐมภูมิ · ปีงบประมาณ 2563–2570</div>
+      <h1>ถ่ายโอน รพ.สต. สู่ท้องถิ่น</h1>
+      <p class="lede">สถานะการถ่ายโอน รพ.สต. สอน. และ สสช. ไปยัง อบจ. และเทศบาล/อบต. เทียบกับการใช้บริการสิทธิ UC และเงินที่ สปสช. โอนตรงถึงหน่วยบริการ ดูได้ตั้งแต่ระดับประเทศจนถึงรายหน่วย</p>
+    </div>
+    <div class="brandside">
+      <div class="logos">
+        <figure class="logo"><figcaption>แหล่งข้อมูล</figcaption><div class="plate"><img src="assets/logo-hsri.jpg" alt="สถาบันวิจัยระบบสาธารณสุข (สวรส.)" width="68" height="50"></div></figure>
+        <figure class="logo"><figcaption>จัดทำโดย</figcaption><div class="plate"><img src="assets/logo-hprc.png" alt="Health Policy Research Center (HPRC)" width="146" height="50"></div></figure>
+      </div>
+      <div class="srcline">แหล่งข้อมูล: <b>สถาบันวิจัยระบบสาธารณสุข (สวรส.)</b><br>ชุดข้อมูลดิบ 11 ก.ย. 2569 · EXP_PCU01 ถ่ายโอน · EXP_PCU02 UC OP/PP · EXP_PCU03 Budget<br>วิเคราะห์และสร้างโดย <b>พลเทพ วิจิตรคุณากร</b> คณะแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</div>
+    </div>
+  </header>
+
+  <div class="filters" id="filters">
+    <div class="frow">
+      <div class="fld"><label for="f-region">ภาค</label><select id="f-region"></select></div>
+      <div class="fld"><label for="f-nhso">เขต สปสช.</label><select id="f-nhso"></select></div>
+      <div class="fld"><label for="f-prov">จังหวัด</label><select id="f-prov"></select></div>
+      <div class="fld"><label for="f-amp">อำเภอ</label><select id="f-amp"></select></div>
+      <div class="fld wide"><label for="f-coh">รุ่นถ่ายโอน</label><select id="f-coh"></select></div>
+      <div class="fld"><label for="f-aff">สังกัดปัจจุบัน</label><select id="f-aff"></select></div>
+      <div class="fld"><label for="f-size">ขนาดหน่วย</label><select id="f-size"></select></div>
+      <div class="fscope"><span id="scope" class="num"></span><button class="btn" id="f-reset" type="button">ล้างตัวกรอง</button></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="มุมมอง">
+      <button class="tab" role="tab" id="t-overview" aria-controls="p-overview" data-tab="overview">ภาพรวมการถ่ายโอน</button>
+      <button class="tab" role="tab" id="t-service" aria-controls="p-service" data-tab="service">การใช้บริการ OP/PP</button>
+      <button class="tab" role="tab" id="t-budget" aria-controls="p-budget" data-tab="budget">เงินโอน สปสช.</button>
+      <button class="tab" role="tab" id="t-units" aria-controls="p-units" data-tab="units">ค้นหารายหน่วย</button>
+    </nav>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section class="panel" id="p-overview" role="tabpanel" aria-labelledby="t-overview">
+    <div class="kpis" id="ov-kpis"></div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><div><h2>จำนวนหน่วยบริการ แยกตามปีงบที่ถ่ายโอน</h2><p class="sub">ปีงบ 2570 เป็นรายการที่มีกำหนดถ่ายโอน เริ่ม 1 ต.ค. 2569</p></div></div>
+        <div class="chart" id="ov-coh"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>สังกัดปัจจุบัน</h2><p class="sub">จำนวนหน่วยบริการตามหน่วยงานที่กำกับในปัจจุบัน</p></div></div>
+        <div class="hbars" id="ov-aff"></div>
+        <div class="d-sec">
+          <h3>บุคลากรที่ถ่ายโอนไปพร้อมหน่วย</h3>
+          <div class="hbars" id="ov-staff"></div>
+          <p class="note-inline">มีข้อมูลเฉพาะหน่วยที่ถ่ายโอนแล้ว ข้อมูลครบสำหรับรุ่นปีงบ 2566–2568</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div><h2>สัดส่วนการถ่ายโอนรายพื้นที่</h2><p class="sub" id="ov-bd-sub"></p></div>
+        <div class="ctrls"><span class="cl">แยกตาม</span><div class="seg" id="ov-bd-by"></div></div>
+      </div>
+      <div class="legend" id="ov-bd-legend"></div>
+      <div class="tbl-wrap scroll-y"><table id="ov-bd"></table></div>
+      <div class="more" id="ov-bd-more"></div>
+    </div>
+  </section>
+
+  <!-- SERVICE -->
+  <section class="panel" id="p-service" role="tabpanel" aria-labelledby="t-service" hidden>
+    <div class="kpis k4" id="sv-kpis"></div>
+    <div class="card">
+      <div class="card-h">
+        <div><h2 id="sv-title"></h2><p class="sub" id="sv-sub"></p></div>
+        <div class="ctrls">
+          <span class="cl">บริการ</span><div class="seg" id="sv-kind"></div>
+          <span class="cl">ข้อมูล</span><div class="seg" id="sv-ver"></div>
+          <span class="cl">แสดง</span><div class="seg" id="sv-meas"></div>
+        </div>
+      </div>
+      <div class="legend" id="sv-legend"></div>
+      <div class="chart" id="sv-chart"></div>
+      <div class="note-inline"><span><i class="dot"></i> ปีงบที่ถ่ายโอน</span><span><i class="dot hollow"></i> ปีงบ 2569 ข้อมูลยังไม่ครบปี</span><span>คลิกชื่อรุ่นเพื่อซ่อน/แสดงเส้น</span></div>
+    </div>
+    <div class="panel-stack">
+      <div class="card">
+        <div class="card-h"><div><h2>ตารางค่าตามรุ่นถ่ายโอน</h2><p class="sub" id="sv-tsub"></p></div></div>
+        <div class="tbl-wrap"><table id="sv-table"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>หน่วยที่ไม่มีข้อมูลในปีนั้น</h2><p class="sub">จำนวนหน่วยที่มีประชากร UC แต่ไม่มีค่า <span id="sv-mkind"></span> ตัดออกจากตัวหารต่อหัว</p></div></div>
+        <div class="tbl-wrap"><table id="sv-miss"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUDGET -->
+  <section class="panel" id="p-budget" role="tabpanel" aria-labelledby="t-budget" hidden>
+    <div class="notice" role="note"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4.2M8 10.8v.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <div>ตัวเลขนี้คือเงินที่ สปสช. <b>โอนตรงถึงหน่วยบริการ</b>เท่านั้น หน่วยที่ยังไม่ถ่ายโอนส่วนใหญ่ได้รับเงินผ่าน CUP (โรงพยาบาลแม่ข่าย) จึงดูต่ำมาก ใช้เทียบทรัพยากรรวมระหว่างกลุ่มไม่ได้ ปีงบ 2569 ยังโอนไม่ครบปี</div></div>
+    <div class="kpis k4" id="bg-kpis"></div>
+    <div class="card">
+      <div class="card-h">
+        <div><h2 id="bg-title"></h2><p class="sub" id="bg-sub"></p></div>
+        <div class="ctrls">
+          <span class="cl">กองทุน</span><div class="fld"><select id="bg-fund" aria-label="กองทุน"></select></div>
+          <span class="cl">แสดง</span><div class="seg" id="bg-meas"></div>
+        </div>
+      </div>
+      <div class="legend" id="bg-legend"></div>
+      <div class="chart" id="bg-chart"></div>
+      <div class="note-inline"><span><i class="dot"></i> ปีงบที่ถ่ายโอน</span><span><i class="dot hollow"></i> ปีงบ 2569 ยังโอนไม่ครบปี</span></div>
+    </div>
+    <div class="grid2e">
+      <div class="card">
+        <div class="card-h">
+          <div><h2>องค์ประกอบตามกองทุน</h2><p class="sub">ล้านบาท ในพื้นที่และรุ่นที่เลือก</p></div>
+          <div class="seg" id="bg-year"></div>
+        </div>
+        <div class="hbars" id="bg-funds"></div>
+        <p class="note-inline" id="bg-other"></p>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>ตารางเงินโอนรายกองทุน</h2><p class="sub">ล้านบาท แยกปีงบ</p></div></div>
+        <div class="tbl-wrap"><table id="bg-table"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNITS -->
+  <section class="panel" id="p-units" role="tabpanel" aria-labelledby="t-units" hidden>
+    <div class="units">
+      <div class="card">
+        <div class="card-h"><div><h2>รายชื่อหน่วยบริการ</h2><p class="sub">คลิกแถวเพื่อดูรายละเอียด ตัวเลขเป็นปีงบ 2568 (ปีล่าสุดที่ครบปี)</p></div></div>
+        <div class="search"><input id="u-q" type="search" placeholder="ค้นหาชื่อหน่วย รหัส 5 หลัก อำเภอ หรือจังหวัด" autocomplete="off"><span id="u-count" class="muted num"></span></div>
+        <div class="tbl-wrap" style="margin-top:12px"><table id="u-table"></table></div>
+        <div class="pager"><button class="btn" id="u-prev" type="button">ก่อนหน้า</button><span id="u-page" class="num"></span><button class="btn" id="u-next" type="button">ถัดไป</button></div>
+      </div>
+      <div class="card detail" id="u-detail"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div><h3>การเตรียมข้อมูล</h3><ul>
+      <li>สถานะและรุ่นถ่ายโอนใช้จากไฟล์ EXP_PCU01 ทุกมุมมอง (ไฟล์ OP/PP ระบุต่างไป 20 หน่วยในอุดรธานี)</li>
+      <li>ตัด 53 แถวในไฟล์ OP/PP ที่ไม่มีรหัสหน่วย และรวมแถวซ้ำของ 43955 รพ.สต.เนินเสรี</li>
+      <li>ขนาดหน่วยค่า “K” และ “on” จัดเป็น “ไม่ระบุ”</li>
+    </ul></div>
+    <div><h3>วิธีคำนวณ</h3><ul>
+      <li>ต่อหัว = ผลรวมบริการ ÷ ประชากร UC ของหน่วยที่มีข้อมูลในปีนั้น</li>
+      <li>เงินโอนต่อหัว = ผลรวมเงินโอน ÷ ประชากร UC ของทุกหน่วยในกลุ่ม</li>
+      <li>Send = ข้อมูลที่ส่ง, Adj = ค่าที่ปรับแล้ว (นิยามรอยืนยันจากเจ้าของข้อมูล)</li>
+    </ul></div>
+    <div><h3>ข้อควรระวัง</h3><ul>
+      <li>ปีงบ 2569 ยังไม่ครบปี ค่า Send ต่ำกว่าปีอื่นมาก</li>
+      <li>มี 16 หน่วยที่เป็น CUP เอง ได้เงิน OP เหมาจ่ายเต็มจำนวน</li>
+      <li>ข้อมูลบุคลากรมีเฉพาะหน่วยที่ถ่ายโอนแล้ว</li>
+    </ul></div>
+    <p class="credit">แหล่งข้อมูล: สถาบันวิจัยระบบสาธารณสุข (สวรส.) · วิเคราะห์และสร้างโดย พลเทพ วิจิตรคุณากร คณะแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</p>
+  </footer>
+</div>
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+<script src="data/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
