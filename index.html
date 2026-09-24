@@ -41,6 +41,7 @@
     </div>
     <nav class="tabs" role="tablist" aria-label="มุมมอง">
       <button class="tab" role="tab" id="t-overview" aria-controls="p-overview" data-tab="overview">ภาพรวมการถ่ายโอน</button>
+      <button class="tab" role="tab" id="t-ba" aria-controls="p-ba" data-tab="ba">ก่อน–หลังถ่ายโอน</button>
       <button class="tab" role="tab" id="t-service" aria-controls="p-service" data-tab="service">การใช้บริการ OP/PP</button>
       <button class="tab" role="tab" id="t-budget" aria-controls="p-budget" data-tab="budget">เงินโอน สปสช.</button>
       <button class="tab" role="tab" id="t-units" aria-controls="p-units" data-tab="units">ค้นหารายหน่วย</button>
@@ -73,6 +74,54 @@
       <div class="legend" id="ov-bd-legend"></div>
       <div class="tbl-wrap scroll-y"><table id="ov-bd"></table></div>
       <div class="more" id="ov-bd-more"></div>
+    </div>
+  </section>
+
+  <!-- BEFORE / AFTER -->
+  <section class="panel" id="p-ba" role="tabpanel" aria-labelledby="t-ba" hidden>
+    <div class="notice" role="note"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4.2M8 10.8v.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <div>เป็นการเปรียบเทียบเชิงพรรณนาแบบผลต่างของผลต่าง (difference-in-differences) ที่ยังไม่ปรับปัจจัยอื่นและยังไม่ทดสอบนัยสำคัญ ใช้ดูทิศทางเบื้องต้น ไม่ใช่ผลเชิงสาเหตุ มุมมองนี้ใช้ตัวกรองพื้นที่และขนาดหน่วยเท่านั้น</div></div>
+    <div class="card">
+      <div class="ctrls">
+        <span class="cl">ตัวชี้วัด</span><div class="seg" id="ba-k"></div>
+        <span class="cl">เทียบกับ</span><div class="seg" id="ba-comp"></div>
+        <span class="cl">หน่วยที่ใช้</span><div class="seg" id="ba-bal"></div>
+        <span class="cl">ช่วงปี</span><div class="seg" id="ba-69"></div>
+      </div>
+      <p class="note-inline" id="ba-scope"></p>
+    </div>
+    <div class="kpis k4" id="ba-kpis"></div>
+    <p class="note-inline" id="ba-kpi-note" style="margin-top:-8px"></p>
+    <div class="card">
+      <div class="card-h"><div><h2>ก่อนและหลังถ่ายโอน รายรุ่น</h2><p class="sub">ค่าต่อหัวรายปีของรุ่นที่ถ่ายโอนเทียบกับกลุ่มเปรียบเทียบในปีเดียวกัน พื้นที่แรเงาคือปีงบหลังถ่ายโอน</p></div></div>
+      <div class="legend" id="ba-sm-legend"></div>
+      <div class="smgrid" id="ba-sm"></div>
+    </div>
+    <div class="grid2e">
+      <div class="card">
+        <div class="card-h"><div><h2>ผลต่างจากกลุ่มเปรียบเทียบ ตามปีเทียบกับปีถ่ายโอน</h2><p class="sub">ตั้งให้ปีก่อนถ่ายโอน 1 ปี = 0 ถ้าเส้นช่วงก่อนถ่ายโอนราบใกล้ 0 แปลว่าแนวโน้มก่อนหน้าขนานกับกลุ่มเปรียบเทียบ</p></div></div>
+        <div class="chart" id="ba-ev"></div>
+        <div class="note-inline"><span><i class="dot"></i> ปีอ้างอิง (ก่อนถ่ายโอน 1 ปี)</span><span>ต่ำกว่า 0 = ลดลงมากกว่ากลุ่มเปรียบเทียบ</span></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>ค่าเฉลี่ยช่วงก่อน → หลังถ่ายโอน</h2><p class="sub">แต่ละรุ่นเทียบกับกลุ่มเปรียบเทียบในช่วงปีเดียวกัน</p></div></div>
+        <div class="note-inline" style="margin:0 0 6px"><span><i class="dot hollow"></i> ช่วงก่อนถ่ายโอน</span><span><i class="dot"></i> ช่วงหลังถ่ายโอน</span></div>
+        <div class="chart" id="ba-db"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><h2>ตารางเปรียบเทียบก่อน–หลัง</h2><p class="sub" id="ba-tsub"></p></div></div>
+      <div class="tbl-wrap"><table id="ba-table"></table></div>
+    </div>
+    <div class="card caveats">
+      <h2>อ่านผลอย่างระมัดระวัง</h2>
+      <ul>
+        <li>ช่วงก่อนถ่ายโอนส่วนใหญ่คือปีงบ 2563–2565 ซึ่งตรงกับช่วงโควิด-19 การใช้บริการลดลงในทุกกลุ่ม</li>
+        <li>การลดลงทันทีในปีงบแรกที่ถ่ายโอน อาจมาจากการเปลี่ยนระบบบันทึกและส่งข้อมูลบริการหลังย้ายสังกัด ไม่ใช่บริการที่ลดลงจริงทั้งหมด ควรตรวจเทียบกับแหล่งข้อมูลอื่น</li>
+        <li>ถ้าเส้นช่วงก่อนถ่ายโอนในกราฟผลต่างไม่ราบใกล้ 0 แปลว่าแนวโน้มก่อนหน้าไม่ขนานกัน ผลต่างที่คำนวณได้จะเชื่อถือได้น้อยลง ในข้อมูลทั้งประเทศ รุ่น 2568 มีลักษณะนี้ชัดที่สุด</li>
+        <li>หน่วยที่ถ่ายโอนกับไม่ถ่ายโอนอาจต่างกันตั้งแต่ต้น เช่น ขนาด พื้นที่ ความพร้อมของ อบจ. ซึ่งยังไม่ได้ปรับ การถ่ายโอนหลายรุ่นต่างปีควรวิเคราะห์ต่อด้วยวิธีสำหรับ staggered adoption เช่น Callaway–Sant'Anna</li>
+        <li>ไม่รวมเงินโอนในมุมมองนี้ เพราะก่อนถ่ายโอนเงินส่วนใหญ่ไปผ่าน CUP ข้อมูลเงินโอนตรงจึงเทียบก่อน–หลังไม่ได้</li>
+      </ul>
     </div>
   </section>
 
